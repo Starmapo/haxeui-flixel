@@ -1,5 +1,8 @@
 package haxe.ui.backend;
 
+import haxe.ui.backend.flixel.FilterConverter;
+import flixel.graphics.frames.FlxFilterFrames;
+import openfl.filters.BitmapFilter;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -18,6 +21,7 @@ import haxe.ui.events.KeyboardEvent;
 import haxe.ui.events.MouseEvent;
 import haxe.ui.events.UIEvent;
 import haxe.ui.filters.DropShadow;
+import haxe.ui.filters.Grayscale;
 import haxe.ui.filters.Outline;
 import haxe.ui.geom.Rectangle;
 import haxe.ui.styles.Style;
@@ -227,11 +231,15 @@ class ComponentImpl extends ComponentBase {
         var h:Int = Std.int(height * Toolkit.scaleY);
         if (_surface.width != w || _surface.height != h) {
             if (w <= 0 || h <= 0) {
-                _surface.graphic.destroy();
+                if (_surface.graphic != null) {
+                    _surface.graphic.destroy();
+                }
                 _surface.makeGraphic(1, 1, 0x0, true);
                 _surface.visible = false;
             } else {
-                _surface.graphic.destroy();
+                if (_surface.graphic != null) {
+                    _surface.graphic.destroy();
+                }
                 _surface.makeGraphic(w, h, 0x0, true);
                 applyStyle(style);
             }
@@ -420,6 +428,7 @@ class ComponentImpl extends ComponentBase {
     
     private function applyFilters(style:Style) {
         if (style.filter != null && style.filter.length > 0) {
+            var filters:Array<BitmapFilter> = [];
             for (f in style.filter) {
                 if (_textDisplay != null && (f is Outline)) {
                     var o = cast(f, Outline);
@@ -428,7 +437,22 @@ class ComponentImpl extends ComponentBase {
                 } else if (_textDisplay != null && (f is DropShadow)) {
                     var o = cast(f, DropShadow);
                     _textDisplay.tf.setBorderStyle(FlxTextBorderStyle.SHADOW, 0xFF000000 | o.color, o.distance);
+                } else {
+                    var cf = FilterConverter.convertFilter(f);
+                    if (cf != null) {
+                        filters.push(cf);
+                    }
                 }
+            }
+            if (filters.length > 0 && _surface.visible) {
+                _surface.frames = FlxFilterFrames.fromFrames(_surface.frames, 0, 0, filters);
+            }
+            if (_imageDisplay != null) {
+                _imageDisplay.filters = filters;
+            }
+        } else {
+            if (_imageDisplay != null && _imageDisplay.filters != null) {
+                _imageDisplay.filters = null;
             }
         }
     }
