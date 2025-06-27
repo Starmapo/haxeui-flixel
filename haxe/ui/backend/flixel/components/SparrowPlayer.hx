@@ -169,12 +169,21 @@ class SparrowPlayer extends Box implements IDataComponent {
 
         var frames:FlxFramesCollection = FlxAtlasFrames.fromSparrow(png, Assets.getText(xml));
         sprite.frames = frames;
+        #if (flixel >= "5.9.0")
+        if (!sprite.animation.onFrameChange.has(onFrame)) {
+            sprite.animation.onFrameChange.add(onFrame);
+        }
+        if (!sprite.animation.onFinish.has(onFinish)) {
+            sprite.animation.onFinish.add(onFinish);
+        }
+        #else
         if (sprite.animation.callback == null) {
             sprite.animation.callback = onFrame;
         }
         if (sprite.animation.finishCallback == null) {
             sprite.animation.finishCallback = onFinish;
         }
+        #end
         invalidateComponentLayout();
         _animationLoaded = true;
 
